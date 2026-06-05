@@ -33,6 +33,11 @@ def set_item(key : Union[StateKey, ProcessorStateKey], value : Any) -> None:
 	app_context = detect_app_context()
 	STATE_SET[app_context][key] = value #type:ignore[literal-required]
 
+	if app_context == 'ui':
+		from facefusion import config
+
+		config.save_config()
+
 
 def sync_item(key : Union[StateKey, ProcessorStateKey]) -> None:
 	STATE_SET['cli'][key] = STATE_SET.get('ui').get(key) #type:ignore[literal-required]

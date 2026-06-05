@@ -11,7 +11,7 @@ from gradio.themes import Size
 import facefusion.uis.overrides as uis_overrides
 from facefusion import logger, metadata, state_manager, translator
 from facefusion.exit_helper import hard_exit
-from facefusion.filesystem import resolve_relative_path
+from facefusion.filesystem import create_directory, resolve_relative_path
 from facefusion.uis.types import Component, ComponentName
 
 UI_COMPONENTS: Dict[ComponentName, Component] = {}
@@ -72,6 +72,7 @@ def register_ui_component(component_name : ComponentName, component: Component) 
 def init() -> None:
 	os.environ['GRADIO_ANALYTICS_ENABLED'] = '0'
 	os.environ['GRADIO_TEMP_DIR'] = os.path.join(state_manager.get_item('temp_path'), 'gradio')
+	create_directory(state_manager.get_item('temp_path'))
 
 	logging.getLogger('asyncio').setLevel(logging.CRITICAL)
 	warnings.filterwarnings('ignore', category = UserWarning, module = 'gradio')

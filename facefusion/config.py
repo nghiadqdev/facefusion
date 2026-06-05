@@ -1,10 +1,28 @@
 from configparser import ConfigParser
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from facefusion import state_manager
 from facefusion.common_helper import cast_bool, cast_float, cast_int
 
 CONFIG_PARSER = None
+CONFIG_STATE_SECTIONS : Dict[str, List[str]] = {
+	'paths': [ 'temp_path', 'jobs_path', 'source_paths', 'target_path', 'output_path' ],
+	'patterns': [ 'source_pattern', 'target_pattern', 'output_pattern' ],
+	'face_detector': [ 'face_detector_model', 'face_detector_size', 'face_detector_margin', 'face_detector_angles', 'face_detector_score' ],
+	'face_landmarker': [ 'face_landmarker_model', 'face_landmarker_score' ],
+	'face_selector': [ 'face_selector_mode', 'face_selector_order', 'face_selector_age_start', 'face_selector_age_end', 'face_selector_gender', 'face_selector_race', 'reference_face_position', 'reference_face_distance', 'reference_frame_number' ],
+	'face_masker': [ 'face_occluder_model', 'face_parser_model', 'face_mask_types', 'face_mask_areas', 'face_mask_regions', 'face_mask_blur', 'face_mask_padding' ],
+	'voice_extractor': [ 'voice_extractor_model' ],
+	'frame_extraction': [ 'trim_frame_start', 'trim_frame_end', 'temp_frame_format', 'keep_temp' ],
+	'output_creation': [ 'output_image_quality', 'output_image_scale', 'output_audio_encoder', 'output_audio_quality', 'output_audio_volume', 'output_video_encoder', 'output_video_preset', 'output_video_quality', 'output_video_scale', 'output_video_fps' ],
+	'processors': [ 'processors' ],
+	'uis': [ 'open_browser', 'ui_layouts', 'ui_workflow' ],
+	'download': [ 'download_providers', 'download_scope' ],
+	'benchmark': [ 'benchmark_mode', 'benchmark_resolutions', 'benchmark_cycle_count' ],
+	'execution': [ 'execution_device_ids', 'execution_providers', 'execution_thread_count' ],
+	'memory': [ 'video_memory_strategy', 'system_memory_limit' ],
+	'misc': [ 'log_level', 'halt_on_error' ]
+}
 
 
 def get_config_parser() -> ConfigParser:
@@ -20,6 +38,31 @@ def clear_config_parser() -> None:
 	global CONFIG_PARSER
 
 	CONFIG_PARSER = None
+
+
+def serialize_config_value(value : Any) -> str:
+	if value is None:
+		return ''
+	if isinstance(value, (list, tuple)):
+		return ' '.join(map(str, value))
+	return str(value)
+
+
+def save_config() -> bool:
+	config_path = state_manager.get_item('config_path') or 'facefusion.ini'
+	config_parser = ConfigParser()
+	config_parser.read(config_path, encoding = 'utf-8')
+	state = state_manager.get_state()
+
+	for section, keys in CONFIG_STATE_SECTIONS.items():
+		if not config_parser.has_section(section):
+			config_parser.add_section(section)
+		for key in keys:
+			config_parser.set(section, key, serialize_config_value(state.get(key)))
+
+	with open(config_path, 'w', encoding = 'utf-8') as config_file:
+		config_parser.write(config_file)
+	return True
 
 
 def get_str_value(section : str, option : str, fallback : Optional[str] = None) -> Optional[str]:

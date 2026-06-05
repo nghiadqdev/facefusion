@@ -1,10 +1,11 @@
 import tempfile
 from argparse import ArgumentParser, HelpFormatter
 from functools import partial
+from pathlib import Path
 
 import facefusion.choices
 from facefusion import config, metadata, state_manager, translator
-from facefusion.common_helper import create_float_metavar, create_int_metavar, get_first, get_last
+from facefusion.common_helper import create_float_metavar, create_int_metavar, get_first, get_last, is_linux, is_macos
 from facefusion.execution import get_available_execution_providers
 from facefusion.ffmpeg import get_available_encoder_set
 from facefusion.filesystem import get_file_name, resolve_file_paths
@@ -33,9 +34,17 @@ def create_config_path_program() -> ArgumentParser:
 def create_temp_path_program() -> ArgumentParser:
 	program = ArgumentParser(add_help = False)
 	group_paths = program.add_argument_group('paths')
-	group_paths.add_argument('--temp-path', help = translator.get('help.temp_path'), default = config.get_str_value('paths', 'temp_path', tempfile.gettempdir()))
+	group_paths.add_argument('--temp-path', help = translator.get('help.temp_path'), default = config.get_str_value('paths', 'temp_path', get_default_temp_path()))
 	job_store.register_job_keys([ 'temp_path' ])
 	return program
+
+
+def get_default_temp_path() -> str:
+	if is_macos():
+		return str(Path.home().joinpath('Library', 'Caches', 'FaceFusion'))
+	if is_linux():
+		return str(Path.home().joinpath('.cache', 'facefusion'))
+	return str(Path(tempfile.gettempdir()).joinpath('facefusion'))
 
 
 def create_jobs_path_program() -> ArgumentParser:
